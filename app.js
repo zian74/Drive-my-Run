@@ -272,6 +272,26 @@ function loadPrefs() {
   $('beep-vibration').checked = state.vibration;
 }
 
+function saveDefaults() {
+  const d = {
+    inputMode: state.inputMode,
+    sound: $('beep-sound').checked,
+    vibration: $('beep-vibration').checked,
+    pace: wheels.pace.value,
+    speed: wheels.speed.value,
+    duration: wheels.duration.value,
+    interval: wheels.interval.value,
+    countdown: wheels.countdown.value,
+    repeats: wheels.repeats.value,
+    recovery: wheels.recovery.value,
+  };
+  try { localStorage.setItem('dmr-defaults', JSON.stringify(d)); } catch (_) { /* stockage indisponible */ }
+}
+
+function loadDefaults() {
+  try { return JSON.parse(localStorage.getItem('dmr-defaults') || 'null'); } catch (_) { return null; }
+}
+
 function savePrefs() {
   const p = {
     inputMode: state.inputMode,
@@ -529,19 +549,27 @@ function initWheels() {
 }
 
 function initEvents() {
+  $('btn-save-defaults').addEventListener('click', () => {
+    saveDefaults();
+    const btn = $('btn-save-defaults');
+    btn.classList.add('saved');
+    setTimeout(() => btn.classList.remove('saved'), 1200);
+  });
+
   $('btn-reset').addEventListener('click', () => {
-    state.inputMode = 'pace';
-    wheels.pace.setValue(300, true);
-    wheels.speed.setValue(12, true);
-    wheels.duration.setValue(600, true);
-    wheels.interval.setValue(100, true);
-    wheels.countdown.setValue(3, true);
-    wheels.repeats.setValue(1, true);
-    wheels.recovery.setValue(120, true);
-    $('beep-sound').checked = true;
-    $('beep-vibration').checked = true;
-    state.sound = true;
-    state.vibration = true;
+    const d = loadDefaults() || {};
+    state.inputMode = d.inputMode === 'speed' ? 'speed' : 'pace';
+    wheels.pace.setValue(d.pace != null ? d.pace : 300, true);
+    wheels.speed.setValue(d.speed != null ? d.speed : 12, true);
+    wheels.duration.setValue(d.duration != null ? d.duration : 600, true);
+    wheels.interval.setValue(d.interval != null && d.interval >= 5 && d.interval <= 100 ? d.interval : 100, true);
+    wheels.countdown.setValue(d.countdown != null ? d.countdown : 3, true);
+    wheels.repeats.setValue(d.repeats != null ? d.repeats : 1, true);
+    wheels.recovery.setValue(d.recovery != null ? d.recovery : 120, true);
+    $('beep-sound').checked = d.sound !== false;
+    $('beep-vibration').checked = d.vibration !== false;
+    state.sound = $('beep-sound').checked;
+    state.vibration = $('beep-vibration').checked;
     applyInputMode();
     savePrefs();
   });

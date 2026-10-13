@@ -54,6 +54,9 @@ h1 { font-size: 1.35rem; text-align: center; margin-bottom: 0; }
   flex: 0 0 auto;
 }
 .btn-reset:active { color: var(--text); border-color: var(--accent); }
+.btn-reset.saved { color: var(--accent); border-color: var(--accent); }
+
+.header-actions { display: flex; gap: 8px; flex: 0 0 auto; }
 
 .screen { display: none; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
 .screen.active { display: flex; }
