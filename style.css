@@ -32,7 +32,28 @@ body {
   flex-direction: column;
 }
 
-h1 { font-size: 1.35rem; text-align: center; margin-bottom: 6px; }
+h1 { font-size: 1.35rem; text-align: center; margin-bottom: 0; }
+
+.setup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.btn-reset {
+  background: var(--card);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.btn-reset:active { color: var(--text); border-color: var(--accent); }
 
 .screen { display: none; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
 .screen.active { display: flex; }

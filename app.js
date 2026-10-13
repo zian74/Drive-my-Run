@@ -129,7 +129,7 @@ class Wheel {
 
 function paceOptions() {
   const opts = [];
-  for (let sec = 180; sec <= 900; sec += 5) {
+  for (let sec = 60; sec <= 900; sec += 5) {
     opts.push({ value: sec, label: `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` });
   }
   return opts;
@@ -145,18 +145,20 @@ function speedOptions() {
 
 function durationOptions() {
   const opts = [];
-  for (let s = 60; s <= 3600; s += 60) {
-    opts.push({ value: s, label: s < 3600 ? `${s / 60}′` : '60′' });
+  for (let m = 1; m <= 120; m++) {
+    opts.push({ value: m * 60, label: m <= 60 ? `${m}′` : formatTime(m * 60) });
   }
   return opts;
 }
 
 function intervalOptions() {
-  return [50, 100, 150, 200, 250, 300, 400, 500, 800, 1000].map((m) => ({ value: m, label: `${m} m` }));
+  const opts = [{ value: 5, label: '5 m' }];
+  for (let m = 10; m <= 100; m += 10) opts.push({ value: m, label: `${m} m` });
+  return opts;
 }
 
 function countdownOptions() {
-  return [0, 3, 5, 10, 15, 30, 60].map((s) => ({ value: s, label: s === 0 ? 'off' : `${s} s` }));
+  return [0, 3, 5, 10, 15, 20, 30].map((s) => ({ value: s, label: s === 0 ? 'off' : `${s} s` }));
 }
 
 function repeatsOptions() {
@@ -430,6 +432,7 @@ function tick() {
     }
     $('stat-count').textContent = String(state.intervalsDone);
     setPhaseLabel(`Course ${state.sessionsDone + 1}/${p.repeats}`, false);
+    $('stat-session').textContent = `${state.sessionsDone + 1}/${p.repeats}`;
     if (elapsed >= p.durationSec) {
       state.sessionsDone += 1;
       state.totalDistance += p.distanceM;
@@ -515,7 +518,7 @@ function initWheels() {
   wheels.pace.setValue(p.pace != null ? p.pace : 300, true);
   wheels.speed.setValue(p.speed != null ? p.speed : 12, true);
   wheels.duration.setValue(p.duration != null ? p.duration : 600, true);
-  wheels.interval.setValue(p.interval != null ? p.interval : 200, true);
+  wheels.interval.setValue(p.interval != null && p.interval <= 100 ? p.interval : 100, true);
   wheels.countdown.setValue(p.countdown != null ? p.countdown : 3, true);
   wheels.repeats.setValue(p.repeats != null ? p.repeats : 1, true);
   wheels.recovery.setValue(p.recovery != null ? p.recovery : 120, true);
@@ -526,6 +529,23 @@ function initWheels() {
 }
 
 function initEvents() {
+  $('btn-reset').addEventListener('click', () => {
+    state.inputMode = 'pace';
+    wheels.pace.setValue(300, true);
+    wheels.speed.setValue(12, true);
+    wheels.duration.setValue(600, true);
+    wheels.interval.setValue(100, true);
+    wheels.countdown.setValue(3, true);
+    wheels.repeats.setValue(1, true);
+    wheels.recovery.setValue(120, true);
+    $('beep-sound').checked = true;
+    $('beep-vibration').checked = true;
+    state.sound = true;
+    state.vibration = true;
+    applyInputMode();
+    savePrefs();
+  });
+
   $('mode-pace').addEventListener('click', () => { state.inputMode = 'pace'; applyInputMode(); });
   $('mode-speed').addEventListener('click', () => { state.inputMode = 'speed'; applyInputMode(); });
   $('beep-sound').addEventListener('change', () => { state.sound = $('beep-sound').checked; savePrefs(); });
