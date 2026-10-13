@@ -18,64 +18,52 @@
     <!-- Écran de configuration -->
     <section id="screen-setup" class="screen active">
       <h1>🏃 Drive-my-Run</h1>
-      <p class="subtitle">Entraîneur à bips — allure régulière</p>
 
-      <div class="field toggle">
-        <label>Saisie</label>
-        <div class="segmented">
-          <button type="button" id="mode-pace" class="seg active">Allure (min/km)</button>
-          <button type="button" id="mode-speed" class="seg">Vitesse (km/h)</button>
+      <div class="segmented compact">
+        <button type="button" id="mode-pace" class="seg active">Allure</button>
+        <button type="button" id="mode-speed" class="seg">Vitesse</button>
+      </div>
+
+      <div class="wheel-grid">
+        <div class="wheel-wrap" id="wrap-pace">
+          <span class="wheel-label">min/km</span>
+          <div class="wheel" id="wheel-pace"></div>
+        </div>
+        <div class="wheel-wrap hidden" id="wrap-speed">
+          <span class="wheel-label">km/h</span>
+          <div class="wheel" id="wheel-speed"></div>
+        </div>
+        <div class="wheel-wrap">
+          <span class="wheel-label">Durée</span>
+          <div class="wheel" id="wheel-duration"></div>
+        </div>
+        <div class="wheel-wrap">
+          <span class="wheel-label">Intervalle</span>
+          <div class="wheel" id="wheel-interval"></div>
         </div>
       </div>
 
-      <div class="field" id="field-pace">
-        <label for="pace">Allure <small>(min/km, ex. 5:00)</small></label>
-        <input type="text" id="pace" inputmode="numeric" placeholder="5:00" autocomplete="off">
+      <div class="wheel-grid">
+        <div class="wheel-wrap">
+          <span class="wheel-label">Départ (s)</span>
+          <div class="wheel" id="wheel-countdown"></div>
+        </div>
+        <div class="wheel-wrap">
+          <span class="wheel-label">Répétitions</span>
+          <div class="wheel" id="wheel-repeats"></div>
+        </div>
+        <div class="wheel-wrap">
+          <span class="wheel-label">Récupération</span>
+          <div class="wheel" id="wheel-recovery"></div>
+        </div>
       </div>
 
-      <div class="field hidden" id="field-speed">
-        <label for="speed">Vitesse <small>(km/h)</small></label>
-        <input type="number" id="speed" min="0.1" step="0.1" placeholder="12" inputmode="decimal">
+      <div class="checkrow center">
+        <label><input type="checkbox" id="beep-sound" checked> 🔊 Son</label>
+        <label><input type="checkbox" id="beep-vibration" checked> 📳 Vibration</label>
       </div>
 
-      <div class="field">
-        <label for="duration">Durée de course <small>(mm:ss)</small></label>
-        <input type="text" id="duration" inputmode="numeric" placeholder="10:00" autocomplete="off">
-      </div>
-
-      <div class="field">
-        <label for="interval">Intervalle de bip <small>(mètres)</small></label>
-        <input type="number" id="interval" min="1" step="1" placeholder="200" inputmode="numeric">
-      </div>
-
-      <fieldset class="params">
-        <legend>Paramètres de séance</legend>
-
-        <div class="field">
-          <label>Bip</label>
-          <div class="checkrow">
-            <label><input type="checkbox" id="beep-sound" checked> Son</label>
-            <label><input type="checkbox" id="beep-vibration" checked> Vibration</label>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="countdown">Compte à rebours de départ <small>(secondes)</small></label>
-          <input type="number" id="countdown" min="0" step="1" value="3" inputmode="numeric">
-        </div>
-
-        <div class="field">
-          <label for="repeats">Répétitions</label>
-          <input type="number" id="repeats" min="1" step="1" value="1" inputmode="numeric">
-        </div>
-
-        <div class="field">
-          <label for="recovery">Récupération entre séances <small>(mm:ss, 0 = aucune)</small></label>
-          <input type="text" id="recovery" inputmode="numeric" placeholder="02:00" value="02:00" autocomplete="off">
-        </div>
-      </fieldset>
-
-      <div id="setup-summary" class="summary hidden"></div>
+      <div id="setup-summary" class="summary compact"></div>
       <p id="setup-error" class="error hidden" role="alert"></p>
 
       <button id="btn-start" class="btn btn-primary">Démarrer</button>
@@ -100,15 +88,13 @@
 
     <!-- Écran récapitulatif -->
     <section id="screen-summary" class="screen">
-      <h1>Séance terminée 🎉</h1>
+      <h1 id="summary-title">Séance terminée 🎉</h1>
       <div id="summary-body" class="summary"></div>
       <div class="controls">
         <button id="btn-again" class="btn btn-primary">Refaire la séance</button>
         <button id="btn-back" class="btn btn-secondary">Nouvelle séance</button>
       </div>
     </section>
-
-    <p id="hint" class="hint hidden"></p>
   </div>
 
   <script src="app.js"></script>

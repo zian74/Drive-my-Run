@@ -4,16 +4,6 @@
 
 const $ = (id) => document.getElementById(id);
 
-function parseTime(str) {
-  if (!str) return NaN;
-  const s = String(str).trim();
-  if (/^\d+(:\d{1,2})?$/.test(s)) {
-    const parts = s.split(':').map(Number);
-    return parts.length === 2 ? parts[0] * 60 + parts[1] : parts[0];
-  }
-  return NaN;
-}
-
 function formatTime(totalSec) {
   const s = Math.max(0, Math.round(totalSec));
   const mm = Math.floor(s / 60).toString().padStart(2, '0');
@@ -28,6 +18,159 @@ function formatPace(minPerKm) {
   const mm = s === 60 ? (m + 1).toString() : m.toString();
   const ss = s === 60 ? '00' : s.toString().padStart(2, '0');
   return `${mm}:${ss} /km`;
+}
+
+/* ---------- Roue sélecteur (style picker) ---------- */
+
+const ITEM_H = 34;
+
+class Wheel {
+  constructor(el, options) {
+    this.el = el;
+    this.options = options; // [{ value, label }]
+    this.index = 0;
+    this.y = 0;
+    this.dragging = false;
+    this.lastY = 0;
+    this.velocity = 0;
+    this.lastT = 0;
+    this.inertia = null;
+    this.onChange = null;
+
+    el.innerHTML = '<div class="highlight"></div><div class="items"></div>';
+    this.itemsEl = el.querySelector('.items');
+    this.itemsEl.innerHTML = options
+      .map((o) => `<div class="item" data-i="${o.value}">${o.label}</div>`)
+      .join('');
+
+    el.addEventListener('pointerdown', this.onDown.bind(this));
+    el.addEventListener('pointermove', this.onMove.bind(this));
+    el.addEventListener('pointerup', this.onUp.bind(this));
+    el.addEventListener('pointercancel', this.onUp.bind(this));
+  }
+
+  get value() { return this.options[this.index].value; }
+
+  setIndex(i, silent) {
+    const max = this.options.length - 1;
+    this.index = Math.max(0, Math.min(max, i));
+    this.y = -this.index * ITEM_H;
+    this.render();
+    if (!silent && this.onChange) this.onChange(this.value);
+  }
+
+  setValue(v, silent) {
+    const i = this.options.findIndex((o) => o.value === v);
+    this.setIndex(i >= 0 ? i : 0, silent);
+  }
+
+  render() {
+    this.itemsEl.style.transform = `translateY(${this.y}px)`;
+    this.itemsEl.querySelectorAll('.item').forEach((node, i) => {
+      node.classList.toggle('dim', i !== this.index);
+    });
+  }
+
+  onDown(e) {
+    this.dragging = true;
+    this.lastY = e.clientY;
+    this.lastT = performance.now();
+    this.velocity = 0;
+    this.inertia = cancelAnimationFrame(this.inertia);
+    this.el.setPointerCapture(e.pointerId);
+  }
+
+  onMove(e) {
+    if (!this.dragging) return;
+    const dy = e.clientY - this.lastY;
+    const now = performance.now();
+    const dt = Math.max(1, now - this.lastT);
+    this.velocity = (dy / dt) * 16;
+    this.lastY = e.clientY;
+    this.lastT = now;
+    this.y += dy;
+    this.itemsEl.style.transform = `translateY(${this.y}px)`;
+  }
+
+  onUp() {
+    if (!this.dragging) return;
+    this.dragging = false;
+    const start = { y: this.y, v: this.velocity, t: performance.now() };
+    const step = (now) => {
+      const elapsed = now - start.t;
+      const projected = start.y + start.v * elapsed * 0.06 - 0.5 * 0.006 * start.v * Math.min(elapsed, 600) * (elapsed / 60);
+      const idx = Math.max(0, Math.min(this.options.length - 1, Math.round(-projected / ITEM_H)));
+      this.setIndex(idx);
+    };
+    const idx = Math.max(0, Math.min(this.options.length - 1, Math.round(-(this.y + this.velocity * 12) / ITEM_H)));
+    this.animateTo(idx);
+  }
+
+  animateTo(idx) {
+    const targetY = -idx * ITEM_H;
+    const startY = this.y;
+    const dist = targetY - startY;
+    if (Math.abs(dist) < 1) { this.setIndex(idx); return; }
+    const dur = Math.min(400, 120 + Math.abs(dist));
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      this.y = startY + dist * eased;
+      this.itemsEl.style.transform = `translateY(${this.y}px)`;
+      if (p < 1) this.inertia = requestAnimationFrame(step);
+      else this.setIndex(idx);
+    };
+    this.inertia = requestAnimationFrame(step);
+  }
+}
+
+/* ---------- Options des roues ---------- */
+
+function paceOptions() {
+  const opts = [];
+  for (let sec = 180; sec <= 900; sec += 5) {
+    opts.push({ value: sec, label: `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` });
+  }
+  return opts;
+}
+
+function speedOptions() {
+  const opts = [];
+  for (let v = 4; v <= 20; v += 0.5) {
+    opts.push({ value: v, label: String(v % 1 === 0 ? v : v.toFixed(1)) });
+  }
+  return opts;
+}
+
+function durationOptions() {
+  const opts = [];
+  for (let s = 60; s <= 3600; s += 60) {
+    opts.push({ value: s, label: s < 3600 ? `${s / 60}′` : '60′' });
+  }
+  return opts;
+}
+
+function intervalOptions() {
+  return [50, 100, 150, 200, 250, 300, 400, 500, 800, 1000].map((m) => ({ value: m, label: `${m} m` }));
+}
+
+function countdownOptions() {
+  return [0, 3, 5, 10, 15, 30, 60].map((s) => ({ value: s, label: s === 0 ? 'off' : `${s} s` }));
+}
+
+function repeatsOptions() {
+  const opts = [];
+  for (let n = 1; n <= 20; n++) opts.push({ value: n, label: `${n}×` });
+  return opts;
+}
+
+function recoveryOptions() {
+  const opts = [{ value: 0, label: 'aucune' }];
+  for (let s = 30; s <= 900; s += 30) {
+    opts.push({ value: s, label: s < 60 ? `${s} s` : formatTime(s) });
+  }
+  return opts;
 }
 
 /* ---------- Audio (Web Audio API) ---------- */
@@ -71,16 +214,16 @@ const AudioBeep = (() => {
 })();
 
 function notify(kind) {
-  if (state.sound && (kind === 'tick' || kind === 'go' || kind === 'interval')) {
+  if (state.sound && (kind === 'tick' || kind === 'go' || kind === 'interval' || kind === 'sessionEnd' || kind === 'recoveryEnd')) {
     if (kind === 'tick') AudioBeep.tick();
     else if (kind === 'go') AudioBeep.go();
-    else AudioBeep.interval();
+    else if (kind === 'interval') AudioBeep.interval();
+    else if (kind === 'sessionEnd') AudioBeep.sessionEnd();
+    else AudioBeep.recoveryEnd();
   }
-  if (kind === 'sessionEnd') AudioBeep.sessionEnd();
-  else if (kind === 'recoveryEnd') AudioBeep.recoveryEnd();
-  else if (state.vibration && navigator.vibrate) {
+  if (state.vibration && navigator.vibrate) {
     const patterns = { tick: 80, go: 300, interval: 120, sessionEnd: [300, 100, 300], recoveryEnd: [200, 80, 200] };
-    navigator.vibrate(patterns[kind]);
+    if (patterns[kind]) navigator.vibrate(patterns[kind]);
   }
 }
 
@@ -89,12 +232,12 @@ function notify(kind) {
 const state = {
   sound: true,
   vibration: true,
-  inputMode: 'pace', // 'pace' | 'speed'
-  session: null,     // paramètres calculés de la séance en cours
-  phase: 'idle',     // idle | countdown | run | recovery
+  inputMode: 'pace',
+  session: null,
+  phase: 'idle',
   running: false,
   timerId: null,
-  phaseStart: 0,     // timestamp de début de phase (ms)
+  phaseStart: 0,
   phaseElapsedBeforePause: 0,
   countdownLastSecond: null,
   intervalsDone: 0,
@@ -104,6 +247,8 @@ const state = {
   beepCount: 0,
 };
 
+const wheels = {};
+
 /* ---------- Écrans ---------- */
 
 function showScreen(name) {
@@ -111,120 +256,95 @@ function showScreen(name) {
   $(`screen-${name}`).classList.add('active');
 }
 
-/* ---------- Configuration ---------- */
+/* ---------- Préférences ---------- */
 
 function loadPrefs() {
   try {
-    const prefs = JSON.parse(localStorage.getItem('dmr-prefs') || '{}');
-    if (typeof prefs.inputMode === 'string') state.inputMode = prefs.inputMode;
-    if (typeof prefs.sound === 'boolean') state.sound = prefs.sound;
-    if (typeof prefs.vibration === 'boolean') state.vibration = prefs.vibration;
-    if (prefs.pace) $('pace').value = prefs.pace;
-    if (prefs.speed) $('speed').value = prefs.speed;
-    if (prefs.duration) $('duration').value = prefs.duration;
-    if (prefs.interval) $('interval').value = prefs.interval;
-    if (typeof prefs.countdown === 'string' || typeof prefs.countdown === 'number') $('countdown').value = prefs.countdown;
-    if (prefs.repeats) $('repeats').value = prefs.repeats;
-    if (prefs.recovery) $('recovery').value = prefs.recovery;
-  } catch (_) { /* préférences corrompues : on garde les valeurs par défaut */ }
+    const p = JSON.parse(localStorage.getItem('dmr-prefs') || '{}');
+    if (p.inputMode === 'pace' || p.inputMode === 'speed') state.inputMode = p.inputMode;
+    if (typeof p.sound === 'boolean') state.sound = p.sound;
+    if (typeof p.vibration === 'boolean') state.vibration = p.vibration;
+    state.prefs = p;
+  } catch (_) { state.prefs = {}; }
   $('beep-sound').checked = state.sound;
   $('beep-vibration').checked = state.vibration;
-  applyInputMode();
 }
 
 function savePrefs() {
-  const prefs = {
+  const p = {
     inputMode: state.inputMode,
     sound: $('beep-sound').checked,
     vibration: $('beep-vibration').checked,
-    pace: $('pace').value,
-    speed: $('speed').value,
-    duration: $('duration').value,
-    interval: $('interval').value,
-    countdown: $('countdown').value,
-    repeats: $('repeats').value,
-    recovery: $('recovery').value,
+    pace: wheels.pace.value,
+    speed: wheels.speed.value,
+    duration: wheels.duration.value,
+    interval: wheels.interval.value,
+    countdown: wheels.countdown.value,
+    repeats: wheels.repeats.value,
+    recovery: wheels.recovery.value,
   };
-  try { localStorage.setItem('dmr-prefs', JSON.stringify(prefs)); } catch (_) { /* stockage indisponible */ }
+  try { localStorage.setItem('dmr-prefs', JSON.stringify(p)); } catch (_) { /* stockage indisponible */ }
 }
 
 function applyInputMode() {
   $('mode-pace').classList.toggle('active', state.inputMode === 'pace');
   $('mode-speed').classList.toggle('active', state.inputMode === 'speed');
-  $('field-pace').classList.toggle('hidden', state.inputMode !== 'pace');
-  $('field-speed').classList.toggle('hidden', state.inputMode !== 'speed');
+  $('wrap-pace').classList.toggle('hidden', state.inputMode !== 'pace');
+  $('wrap-speed').classList.toggle('hidden', state.inputMode !== 'speed');
+  refreshSummary();
 }
+
+/* ---------- Lecture des paramètres ---------- */
 
 function readInputs() {
   let speedKmh;
   if (state.inputMode === 'pace') {
-    const paceSec = parseTime($('pace').value);
-    if (!isFinite(paceSec) || paceSec <= 0) return { error: 'Allure invalide (ex. 5:00).' };
-    speedKmh = 3600 / paceSec;
+    speedKmh = 3600 / wheels.pace.value;
   } else {
-    speedKmh = parseFloat($('speed').value);
-    if (!isFinite(speedKmh) || speedKmh <= 0) return { error: 'Vitesse invalide.' };
+    speedKmh = wheels.speed.value;
   }
 
-  const durationSec = parseTime($('duration').value);
-  if (!isFinite(durationSec) || durationSec <= 0) return { error: 'Durée invalide (ex. 10:00).' };
-
-  const intervalM = parseInt($('interval').value, 10);
-  if (!isFinite(intervalM) || intervalM <= 0) return { error: 'Intervalle invalide (ex. 200).' };
-
-  const countdownSec = Math.max(0, parseInt($('countdown').value, 10) || 0);
-  const repeats = Math.max(1, parseInt($('repeats').value, 10) || 1);
-  const recoverySec = parseTime($('recovery').value) || 0;
+  const durationSec = wheels.duration.value;
+  const intervalM = wheels.interval.value;
+  const countdownSec = wheels.countdown.value;
+  const repeats = wheels.repeats.value;
+  const recoverySec = wheels.recovery.value;
 
   const distanceM = speedKmh * 1000 * (durationSec / 3600);
-  if (distanceM < intervalM) return { error: 'La distance totale est inférieure à l\'intervalle de bip.' };
+  if (distanceM < intervalM) return { error: 'Distance totale inférieure à l\'intervalle.' };
 
   const beepSec = (durationSec / distanceM) * intervalM;
 
-  return {
-    speedKmh,
-    durationSec,
-    intervalM,
-    countdownSec,
-    repeats,
-    recoverySec,
-    distanceM,
-    beepSec,
-    error: null,
-  };
+  return { speedKmh, durationSec, intervalM, countdownSec, repeats, recoverySec, distanceM, beepSec, error: null };
 }
 
-function updateSummary(p) {
+function updateSummary() {
   const el = $('setup-summary');
-  if (!p) { el.classList.add('hidden'); return; }
+  const errEl = $('setup-error');
+  const p = readInputs();
+  if (p.error) {
+    el.classList.add('hidden');
+    errEl.textContent = p.error;
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
   el.classList.remove('hidden');
   const paceMinPerKm = 60 / p.speedKmh;
   el.innerHTML =
-    `Distance par séance : <strong>${(p.distanceM / 1000).toFixed(2)} km</strong><br>` +
-    `Bip tous les : <strong>${p.beepSec.toFixed(1)} s</strong><br>` +
-    `Distance totale (${p.repeats}×) : <strong>${((p.distanceM * p.repeats) / 1000).toFixed(2)} km</strong>` +
-    (p.repeats > 1 ? ` — récup. ${formatTime(p.recoverySec)}` : '') +
-    `<br>Allure : <strong>${formatPace(paceMinPerKm)}</strong> (${p.speedKmh.toFixed(1)} km/h)`;
+    `${(p.distanceM / 1000).toFixed(2)} km • bip tous les <strong>${p.beepSec.toFixed(1)} s</strong><br>` +
+    `${p.repeats}× ${formatTime(p.durationSec)}` +
+    (p.repeats > 1 && p.recoverySec > 0 ? ` + récup. ${formatTime(p.recoverySec)}` : '') +
+    ` • total ${((p.distanceM * p.repeats) / 1000).toFixed(2)} km • ${formatPace(paceMinPerKm)}`;
 }
 
-function refreshSummary() {
-  const errEl = $('setup-error');
-  errEl.classList.add('hidden');
-  const p = readInputs();
-  if (p.error) { updateSummary(null); return; }
-  updateSummary(p);
-}
+function refreshSummary() { updateSummary(); }
 
 /* ---------- Moteur de séance ---------- */
 
 function startWorkout() {
   const p = readInputs();
-  const errEl = $('setup-error');
-  if (p.error) {
-    errEl.textContent = p.error;
-    errEl.classList.remove('hidden');
-    return;
-  }
+  if (p.error) return;
   savePrefs();
   Object.assign(state, {
     session: p,
@@ -240,7 +360,6 @@ function startWorkout() {
   AudioBeep.unlock();
   showScreen('run');
   $('btn-pause').textContent = 'Pause';
-  $('btn-pause').disabled = false;
   $('stat-beep').textContent = `${p.beepSec.toFixed(1)} s`;
   $('stat-count').textContent = '0';
   $('stat-distance').textContent = '0 m';
@@ -259,14 +378,6 @@ function beginPhase(phase) {
   tick();
 }
 
-function phaseDuration(phase) {
-  const p = state.session;
-  if (phase === 'countdown') return p.countdownSec;
-  if (phase === 'run') return p.durationSec;
-  if (phase === 'recovery') return p.recoverySec;
-  return 0;
-}
-
 function phaseElapsed() {
   if (!state.running) return state.phaseElapsedBeforePause;
   return state.phaseElapsedBeforePause + (performance.now() - state.phaseStart) / 1000;
@@ -283,6 +394,12 @@ function tick() {
   const elapsed = phaseElapsed();
 
   if (state.phase === 'countdown') {
+    if (p.countdownSec === 0) {
+      notify('go');
+      state.intervalsDone = 0;
+      beginPhase('run');
+      return;
+    }
     const remaining = Math.ceil(p.countdownSec - elapsed);
     $('run-timer').textContent = String(Math.max(0, remaining));
     $('run-sub').textContent = 'Préparez-vous…';
@@ -312,6 +429,7 @@ function tick() {
       notify('interval');
     }
     $('stat-count').textContent = String(state.intervalsDone);
+    setPhaseLabel(`Course ${state.sessionsDone + 1}/${p.repeats}`, false);
     if (elapsed >= p.durationSec) {
       state.sessionsDone += 1;
       state.totalDistance += p.distanceM;
@@ -328,13 +446,12 @@ function tick() {
 
   if (state.phase === 'recovery') {
     const remaining = Math.max(0, p.recoverySec - elapsed);
-    $('stat-session').textContent = `${state.sessionsDone + 1}/${p.repeats}`;
     $('run-timer').textContent = formatTime(remaining);
-    $('run-sub').textContent = `récupération — prochaine séance ${state.sessionsDone + 1}/${p.repeats}`;
-    const warnWindow = remaining <= 3;
-    setPhaseLabel(`Récupération (séance ${state.sessionsDone}/${p.repeats} faite)`, warnWindow);
+    $('run-sub').textContent = 'récupération libre';
+    setPhaseLabel(`Récupération (séance ${state.sessionsDone}/${p.repeats} faite)`, remaining <= 3);
+    $('stat-session').textContent = `${state.sessionsDone + 1}/${p.repeats}`;
     const sec = Math.ceil(elapsed);
-    if (warnWindow && sec !== state.countdownLastSecond) {
+    if (remaining <= 3 && sec !== state.countdownLastSecond) {
       state.countdownLastSecond = sec;
       if (remaining > 0) notify('tick');
     }
@@ -363,18 +480,14 @@ function resumeWorkout() {
   tick();
 }
 
-function stopWorkout(silent) {
-  clearInterval(state.timerId);
-  state.running = false;
-  state.phase = 'idle';
-  if (!silent) finishWorkout(true);
+function stopWorkout() {
+  finishWorkout(true);
 }
 
 function finishWorkout(stopped) {
   clearInterval(state.timerId);
   state.running = false;
   state.phase = 'idle';
-  const p = state.session;
   const body = $('summary-body');
   const distKm = (state.totalDistance / 1000).toFixed(2);
   body.innerHTML =
@@ -383,32 +496,57 @@ function finishWorkout(stopped) {
     `Temps de course : <strong>${formatTime(state.totalRunTime)}</strong><br>` +
     `Bips émis : <strong>${state.beepCount}</strong>` +
     (stopped && state.sessionsDone === 0 ? '<br><em>Séance interrompue avant la première course.</em>' : '');
-  $('screen-summary').querySelector('h1').textContent = stopped ? 'Séance arrêtée' : 'Séance terminée 🎉';
+  $('summary-title').textContent = stopped ? 'Séance arrêtée' : 'Séance terminée 🎉';
   showScreen('summary');
 }
 
-/* ---------- Événements ---------- */
+/* ---------- Initialisation ---------- */
 
-$('mode-pace').addEventListener('click', () => { state.inputMode = 'pace'; applyInputMode(); });
-$('mode-speed').addEventListener('click', () => { state.inputMode = 'speed'; applyInputMode(); });
+function initWheels() {
+  wheels.pace = new Wheel($('wheel-pace'), paceOptions());
+  wheels.speed = new Wheel($('wheel-speed'), speedOptions());
+  wheels.duration = new Wheel($('wheel-duration'), durationOptions());
+  wheels.interval = new Wheel($('wheel-interval'), intervalOptions());
+  wheels.countdown = new Wheel($('wheel-countdown'), countdownOptions());
+  wheels.repeats = new Wheel($('wheel-repeats'), repeatsOptions());
+  wheels.recovery = new Wheel($('wheel-recovery'), recoveryOptions());
 
-['pace', 'speed', 'duration', 'interval', 'countdown', 'repeats', 'recovery'].forEach((id) => {
-  $(id).addEventListener('input', refreshSummary);
-});
+  const p = state.prefs || {};
+  wheels.pace.setValue(p.pace != null ? p.pace : 300, true);
+  wheels.speed.setValue(p.speed != null ? p.speed : 12, true);
+  wheels.duration.setValue(p.duration != null ? p.duration : 600, true);
+  wheels.interval.setValue(p.interval != null ? p.interval : 200, true);
+  wheels.countdown.setValue(p.countdown != null ? p.countdown : 3, true);
+  wheels.repeats.setValue(p.repeats != null ? p.repeats : 1, true);
+  wheels.recovery.setValue(p.recovery != null ? p.recovery : 120, true);
 
-$('btn-start').addEventListener('click', startWorkout);
-$('btn-pause').addEventListener('click', () => (state.running ? pauseWorkout() : resumeWorkout()));
-$('btn-stop').addEventListener('click', () => stopWorkout(false));
-$('btn-again').addEventListener('click', startWorkout);
-$('btn-back').addEventListener('click', () => showScreen('setup'));
+  Object.values(wheels).forEach((w) => {
+    w.onChange = refreshSummary;
+  });
+}
 
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && state.running && state.phaseStart) tick();
-});
+function initEvents() {
+  $('mode-pace').addEventListener('click', () => { state.inputMode = 'pace'; applyInputMode(); });
+  $('mode-speed').addEventListener('click', () => { state.inputMode = 'speed'; applyInputMode(); });
+  $('beep-sound').addEventListener('change', () => { state.sound = $('beep-sound').checked; savePrefs(); });
+  $('beep-vibration').addEventListener('change', () => { state.vibration = $('beep-vibration').checked; savePrefs(); });
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => { /* SW indisponible : l'app reste utilisable en ligne */ });
+  $('btn-start').addEventListener('click', startWorkout);
+  $('btn-pause').addEventListener('click', () => (state.running ? pauseWorkout() : resumeWorkout()));
+  $('btn-stop').addEventListener('click', stopWorkout);
+  $('btn-again').addEventListener('click', startWorkout);
+  $('btn-back').addEventListener('click', () => showScreen('setup'));
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && state.running) tick();
+  });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* SW indisponible */ });
+  }
 }
 
 loadPrefs();
-refreshSummary();
+initWheels();
+initEvents();
+applyInputMode();
