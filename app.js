@@ -242,6 +242,9 @@ function startWorkout() {
   $('btn-pause').textContent = 'Pause';
   $('btn-pause').disabled = false;
   $('stat-beep').textContent = `${p.beepSec.toFixed(1)} s`;
+  $('stat-count').textContent = '0';
+  $('stat-distance').textContent = '0 m';
+  $('stat-session').textContent = `1/${p.repeats}`;
   beginPhase('countdown');
 }
 
@@ -300,6 +303,8 @@ function tick() {
     const remaining = Math.max(0, p.durationSec - elapsed);
     $('run-timer').textContent = formatTime(remaining);
     $('run-sub').textContent = `temps écoulé ${formatTime(elapsed)}`;
+    const distM = p.speedKmh * 1000 * (Math.min(elapsed, p.durationSec) / 3600);
+    $('stat-distance').textContent = distM >= 1000 ? `${(distM / 1000).toFixed(2)} km` : `${Math.round(distM)} m`;
     const beepTarget = state.intervalsDone + 1;
     if (elapsed >= beepTarget * p.beepSec && beepTarget * p.beepSec <= p.durationSec) {
       state.intervalsDone += 1;
@@ -323,6 +328,7 @@ function tick() {
 
   if (state.phase === 'recovery') {
     const remaining = Math.max(0, p.recoverySec - elapsed);
+    $('stat-session').textContent = `${state.sessionsDone + 1}/${p.repeats}`;
     $('run-timer').textContent = formatTime(remaining);
     $('run-sub').textContent = `récupération — prochaine séance ${state.sessionsDone + 1}/${p.repeats}`;
     const warnWindow = remaining <= 3;
