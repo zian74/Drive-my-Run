@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <title>Drive-my-Run</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Écran de configuration -->
+    <section id="screen-setup" class="screen active">
+      <h1>🏃 Drive-my-Run</h1>
+      <p class="subtitle">Entraîneur à bips — allure régulière</p>
+
+      <div class="field toggle">
+        <label>Saisie</label>
+        <div class="segmented">
+          <button type="button" id="mode-pace" class="seg active">Allure (min/km)</button>
+          <button type="button" id="mode-speed" class="seg">Vitesse (km/h)</button>
+        </div>
+      </div>
+
+      <div class="field" id="field-pace">
+        <label for="pace">Allure <small>(min/km, ex. 5:00)</small></label>
+        <input type="text" id="pace" inputmode="numeric" placeholder="5:00" autocomplete="off">
+      </div>
+
+      <div class="field hidden" id="field-speed">
+        <label for="speed">Vitesse <small>(km/h)</small></label>
+        <input type="number" id="speed" min="0.1" step="0.1" placeholder="12" inputmode="decimal">
+      </div>
+
+      <div class="field">
+        <label for="duration">Durée de course <small>(mm:ss)</small></label>
+        <input type="text" id="duration" inputmode="numeric" placeholder="10:00" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="interval">Intervalle de bip <small>(mètres)</small></label>
+        <input type="number" id="interval" min="1" step="1" placeholder="200" inputmode="numeric">
+      </div>
+
+      <fieldset class="params">
+        <legend>Paramètres de séance</legend>
+
+        <div class="field">
+          <label>Bip</label>
+          <div class="checkrow">
+            <label><input type="checkbox" id="beep-sound" checked> Son</label>
+            <label><input type="checkbox" id="beep-vibration" checked> Vibration</label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="countdown">Compte à rebours de départ <small>(secondes)</small></label>
+          <input type="number" id="countdown" min="0" step="1" value="3" inputmode="numeric">
+        </div>
+
+        <div class="field">
+          <label for="repeats">Répétitions</label>
+          <input type="number" id="repeats" min="1" step="1" value="1" inputmode="numeric">
+        </div>
+
+        <div class="field">
+          <label for="recovery">Récupération entre séances <small>(mm:ss, 0 = aucune)</small></label>
+          <input type="text" id="recovery" inputmode="numeric" placeholder="02:00" value="02:00" autocomplete="off">
+        </div>
+      </fieldset>
+
+      <div id="setup-summary" class="summary hidden"></div>
+      <p id="setup-error" class="error hidden" role="alert"></p>
+
+      <button id="btn-start" class="btn btn-primary">Démarrer</button>
+    </section>
+
+    <!-- Écran de séance -->
+    <section id="screen-run" class="screen">
+      <div id="run-phase" class="phase">Prêt</div>
+      <div id="run-timer" class="timer">00:00</div>
+      <div id="run-sub" class="subtimer"></div>
+      <div id="run-stats" class="stats">
+        <div class="stat"><span class="stat-label">Intervalle</span><span id="stat-beep" class="stat-value">—</span></div>
+        <div class="stat"><span class="stat-label">Bips</span><span id="stat-count" class="stat-value">0</span></div>
+        <div class="stat"><span class="stat-label">Séance</span><span id="stat-session" class="stat-value">1/1</span></div>
+      </div>
+      <div class="controls">
+        <button id="btn-pause" class="btn btn-secondary">Pause</button>
+        <button id="btn-stop" class="btn btn-danger">Arrêter</button>
+      </div>
+    </section>
+
+    <!-- Écran récapitulatif -->
+    <section id="screen-summary" class="screen">
+      <h1>Séance terminée 🎉</h1>
+      <div id="summary-body" class="summary"></div>
+      <div class="controls">
+        <button id="btn-again" class="btn btn-primary">Refaire la séance</button>
+        <button id="btn-back" class="btn btn-secondary">Nouvelle séance</button>
+      </div>
+    </section>
+
+    <p id="hint" class="hint hidden"></p>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
