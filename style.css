@@ -191,19 +191,19 @@ h1 { font-size: 1.35rem; text-align: center; margin-bottom: 0; }
 }
 .subtimer { text-align: center; color: var(--muted); font-size: 0.95rem; min-height: 1.3em; }
 
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
 .stat {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 8px 4px;
+  border-radius: 12px;
+  padding: 14px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
-.stat-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.stat-value { font-size: 0.95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 #summary-title { text-align: center; margin-top: 18px; }
 
