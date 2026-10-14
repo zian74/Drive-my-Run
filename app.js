@@ -633,19 +633,47 @@ function initEvents() {
     setTimeout(() => btn.classList.remove('saved'), 1200);
   });
 
-  $('btn-library').addEventListener('click', () => {
+  const backdrop = $('modal-backdrop');
+  const nameInput = $('name-input');
+  let pendingName = null;
+
+  function openNameModal(defaultName) {
+    pendingName = null;
+    nameInput.value = defaultName || '';
+    backdrop.classList.remove('hidden');
+    setTimeout(() => { nameInput.focus(); nameInput.select(); }, 50);
+  }
+
+  function closeNameModal() { backdrop.classList.add('hidden'); pendingName = null; }
+
+  function confirmNameModal() {
+    const name = nameInput.value.trim() || nameInput.placeholder;
+    pendingName = name;
+    backdrop.classList.add('hidden');
     const d = currentSettings();
     const list = loadLibrary();
-    const base = sessionLabel(d).replace(/\s/g, '');
-    let name = base;
+    let finalName = name;
     let n = 2;
-    while (list.some((it) => it.label === name)) name = `${base} (${n++})`;
-    list.push({ label: name, ...d });
+    while (list.some((it) => it.label === finalName)) finalName = `${name} (${n++})`;
+    list.push({ label: finalName, ...d });
     saveLibrary(list);
     renderLibrary();
     const btn = $('btn-library');
     btn.classList.add('saved');
     setTimeout(() => btn.classList.remove('saved'), 1200);
+    pendingName = null;
+  }
+
+  $('btn-library').addEventListener('click', () => {
+    openNameModal(sessionLabel(currentSettings()));
+  });
+
+  $('name-cancel').addEventListener('click', closeNameModal);
+  $('name-save').addEventListener('click', confirmNameModal);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeNameModal(); });
+  nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') confirmNameModal();
+    if (e.key === 'Escape') closeNameModal();
   });
 
   $('btn-reset').addEventListener('click', () => applySettings(loadDefaults()));

@@ -45,14 +45,14 @@
           <div class="wheel" id="wheel-duration"></div>
         </div>
         <div class="wheel-wrap">
-          <span class="wheel-label">Intervalle</span>
+          <span class="wheel-label">Bip tous les</span>
           <div class="wheel" id="wheel-interval"></div>
         </div>
       </div>
 
       <div class="wheel-grid">
         <div class="wheel-wrap">
-          <span class="wheel-label">Départ (s)</span>
+          <span class="wheel-label">Départ dans (s)</span>
           <div class="wheel" id="wheel-countdown"></div>
         </div>
         <div class="wheel-wrap">
@@ -108,6 +108,18 @@
         <button id="btn-back" class="btn btn-secondary">Nouvelle séance</button>
       </div>
     </section>
+  </div>
+
+  <div id="modal-backdrop" class="modal-backdrop hidden">
+    <div id="name-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="name-modal-title">
+      <span id="name-modal-title">Nommer la séance</span>
+      <input type="text" id="name-input" class="name-input" maxlength="30" autocomplete="off"
+             placeholder="Ex. Fractionné court" enterkeyhint="done">
+      <div class="modal-actions">
+        <button type="button" id="name-cancel" class="btn btn-secondary">Annuler</button>
+        <button type="button" id="name-save" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

@@ -211,6 +211,41 @@ h1 { font-size: 1.35rem; text-align: center; margin-bottom: 0; }
 .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .controls { display: flex; gap: 10px; }
 
+/* --- Dialogue de nommage --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 20px;
+}
+.modal {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  font-weight: 600;
+}
+.name-input {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  outline: none;
+}
+.name-input:focus { border-color: var(--accent); }
+.modal-actions { display: flex; gap: 10px; }
+
 /* --- Écran de course --- */
 .phase {
   text-align: center;
