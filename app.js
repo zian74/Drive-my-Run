@@ -499,6 +499,11 @@ function tick() {
       beginPhase('run');
       return;
     }
+    if (state.sessionsDone > 0) {
+      state.intervalsDone = 0;
+      beginPhase('run');
+      return;
+    }
     const remaining = Math.ceil(p.countdownSec - elapsed);
     $('run-timer').textContent = String(Math.max(0, remaining));
     $('run-sub').textContent = 'Préparez-vous…';
@@ -536,7 +541,7 @@ function tick() {
       state.totalRunTime += p.durationSec;
       notify('sessionEnd');
       if (state.sessionsDone < p.repeats) {
-        beginPhase(p.recoverySec > 0 ? 'recovery' : 'countdown');
+        beginPhase(p.recoverySec > 0 ? 'recovery' : 'run');
       } else {
         finishWorkout();
       }
@@ -557,7 +562,8 @@ function tick() {
     }
     if (elapsed >= p.recoverySec) {
       notify('recoveryEnd');
-      beginPhase('countdown');
+      state.intervalsDone = 0;
+      beginPhase('run');
     }
     return;
   }
