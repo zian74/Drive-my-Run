@@ -58,6 +58,43 @@ h1 { font-size: 1.35rem; text-align: center; margin-bottom: 0; }
 
 .header-actions { display: flex; gap: 8px; flex: 0 0 auto; }
 
+/* --- Bibliothèque de séances --- */
+.library { display: flex; flex-direction: column; gap: 4px; }
+.library-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.library-row::-webkit-scrollbar { display: none; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 6px 5px 12px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  color: var(--text);
+}
+.chip .chip-label { cursor: pointer; }
+.chip:has(.chip-label:active) { border-color: var(--accent); }
+.chip .chip-del {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.chip .chip-del:active { color: var(--danger); }
+
 .screen { display: none; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
 .screen.active { display: flex; }
 .hidden { display: none !important; }

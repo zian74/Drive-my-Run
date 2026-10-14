@@ -20,6 +20,7 @@
       <div class="setup-header">
         <h1>🏃 Drive-my-Run</h1>
         <div class="header-actions">
+          <button type="button" id="btn-library" class="btn-reset" title="Ajouter à la bibliothèque" aria-label="Ajouter les réglages actuels à la bibliothèque">📚</button>
           <button type="button" id="btn-save-defaults" class="btn-reset" title="Fixer comme réglages par défaut" aria-label="Fixer les réglages actuels par défaut">💾</button>
           <button type="button" id="btn-reset" class="btn-reset" title="Valeurs par défaut" aria-label="Réinitialiser les valeurs">↺</button>
         </div>
@@ -70,6 +71,12 @@
       </div>
 
       <div id="setup-summary" class="summary compact"></div>
+
+      <div id="library" class="library hidden">
+        <span class="wheel-label">📚 Bibliothèque de séances</span>
+        <div id="library-row" class="library-row"></div>
+      </div>
+
       <p id="setup-error" class="error hidden" role="alert"></p>
 
       <button id="btn-start" class="btn btn-primary">Démarrer</button>

@@ -292,6 +292,83 @@ function loadDefaults() {
   try { return JSON.parse(localStorage.getItem('dmr-defaults') || 'null'); } catch (_) { return null; }
 }
 
+function loadLibrary() {
+  try { return JSON.parse(localStorage.getItem('dmr-library') || '[]'); } catch (_) { return []; }
+}
+
+function saveLibrary(list) {
+  try { localStorage.setItem('dmr-library', JSON.stringify(list)); } catch (_) { /* stockage indisponible */ }
+}
+
+function currentSettings() {
+  return {
+    inputMode: state.inputMode,
+    sound: $('beep-sound').checked,
+    vibration: $('beep-vibration').checked,
+    pace: wheels.pace.value,
+    speed: wheels.speed.value,
+    duration: wheels.duration.value,
+    interval: wheels.interval.value,
+    countdown: wheels.countdown.value,
+    repeats: wheels.repeats.value,
+    recovery: wheels.recovery.value,
+  };
+}
+
+function applySettings(d, opts) {
+  const s = d || {};
+  state.inputMode = s.inputMode === 'speed' ? 'speed' : 'pace';
+  wheels.pace.setValue(s.pace != null ? s.pace : 300, true);
+  wheels.speed.setValue(s.speed != null ? s.speed : 12, true);
+  wheels.duration.setValue(s.duration != null ? s.duration : 600, true);
+  wheels.interval.setValue(s.interval != null && s.interval >= 5 && s.interval <= 100 ? s.interval : 100, true);
+  wheels.countdown.setValue(s.countdown != null ? s.countdown : 3, true);
+  wheels.repeats.setValue(s.repeats != null ? s.repeats : 1, true);
+  wheels.recovery.setValue(s.recovery != null ? s.recovery : 120, true);
+  $('beep-sound').checked = s.sound !== false;
+  $('beep-vibration').checked = s.vibration !== false;
+  state.sound = $('beep-sound').checked;
+  state.vibration = $('beep-vibration').checked;
+  applyInputMode();
+  if (!(opts && opts.silent)) savePrefs();
+}
+
+function sessionLabel(d) {
+  const paceTxt = d.inputMode === 'speed' ? `${d.speed} km/h` : `${Math.floor(d.pace / 60)}:${String(d.pace % 60).padStart(2, '0')}`;
+  const durTxt = d.duration >= 3600 ? formatTime(d.duration) : `${d.duration / 60}′`;
+  return `${paceTxt} • ${durTxt} • ${d.interval} m`;
+}
+
+function renderLibrary() {
+  const list = loadLibrary();
+  const wrap = $('library');
+  const row = $('library-row');
+  if (!list.length) { wrap.classList.add('hidden'); row.innerHTML = ''; return; }
+  wrap.classList.remove('hidden');
+  row.innerHTML = '';
+  list.forEach((item, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    const label = document.createElement('span');
+    label.className = 'chip-label';
+    label.textContent = item.label;
+    label.title = sessionLabel(item);
+    label.addEventListener('click', () => applySettings(item));
+    const del = document.createElement('button');
+    del.className = 'chip-del';
+    del.textContent = '×';
+    del.title = 'Supprimer de la bibliothèque';
+    del.addEventListener('click', () => {
+      const l = loadLibrary();
+      l.splice(i, 1);
+      saveLibrary(l);
+      renderLibrary();
+    });
+    chip.append(label, del);
+    row.appendChild(chip);
+  });
+}
+
 function savePrefs() {
   const p = {
     inputMode: state.inputMode,
@@ -556,23 +633,22 @@ function initEvents() {
     setTimeout(() => btn.classList.remove('saved'), 1200);
   });
 
-  $('btn-reset').addEventListener('click', () => {
-    const d = loadDefaults() || {};
-    state.inputMode = d.inputMode === 'speed' ? 'speed' : 'pace';
-    wheels.pace.setValue(d.pace != null ? d.pace : 300, true);
-    wheels.speed.setValue(d.speed != null ? d.speed : 12, true);
-    wheels.duration.setValue(d.duration != null ? d.duration : 600, true);
-    wheels.interval.setValue(d.interval != null && d.interval >= 5 && d.interval <= 100 ? d.interval : 100, true);
-    wheels.countdown.setValue(d.countdown != null ? d.countdown : 3, true);
-    wheels.repeats.setValue(d.repeats != null ? d.repeats : 1, true);
-    wheels.recovery.setValue(d.recovery != null ? d.recovery : 120, true);
-    $('beep-sound').checked = d.sound !== false;
-    $('beep-vibration').checked = d.vibration !== false;
-    state.sound = $('beep-sound').checked;
-    state.vibration = $('beep-vibration').checked;
-    applyInputMode();
-    savePrefs();
+  $('btn-library').addEventListener('click', () => {
+    const d = currentSettings();
+    const list = loadLibrary();
+    const base = sessionLabel(d).replace(/\s/g, '');
+    let name = base;
+    let n = 2;
+    while (list.some((it) => it.label === name)) name = `${base} (${n++})`;
+    list.push({ label: name, ...d });
+    saveLibrary(list);
+    renderLibrary();
+    const btn = $('btn-library');
+    btn.classList.add('saved');
+    setTimeout(() => btn.classList.remove('saved'), 1200);
   });
+
+  $('btn-reset').addEventListener('click', () => applySettings(loadDefaults()));
 
   $('mode-pace').addEventListener('click', () => { state.inputMode = 'pace'; applyInputMode(); });
   $('mode-speed').addEventListener('click', () => { state.inputMode = 'speed'; applyInputMode(); });
@@ -598,3 +674,4 @@ loadPrefs();
 initWheels();
 initEvents();
 applyInputMode();
+renderLibrary();
